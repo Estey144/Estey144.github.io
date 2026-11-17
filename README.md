@@ -66,56 +66,47 @@ npm run preview   # serves dist/ locally → http://localhost:4173
 
 ---
 
-## Deploying to GitHub Pages
+## Deploying (live at https://estey144.github.io)
 
-Deployment is automatic. `.github/workflows/deploy.yml` builds and publishes the site every time you push to `main`.
-
-### 1. Choose a repository name
-
-| Repository name | Site URL |
-| --- | --- |
-| `<your-username>.github.io` | `https://<your-username>.github.io/` |
-| anything else, e.g. `portfolio` | `https://<your-username>.github.io/portfolio/` |
-
-You **don't need to edit any config** for either option. The workflow reads the repository name and sets Vite's base path for you.
-
-### 2. Create the repository and push
-
-Create an **empty** repository on GitHub (no README or .gitignore), then run this from the project folder:
+The site is served by GitHub Pages from the **`gh-pages`** branch. To publish your latest changes:
 
 ```bash
-git init
-git add .
-git commit -m "Initial portfolio"
-git branch -M main
-git remote add origin https://github.com/<your-username>/<repo-name>.git
-git push -u origin main
+git add -A && git commit -m "Update portfolio"   # save your changes
+git push                                          # back up the source on GitHub (main)
+npm run deploy                                    # build and publish to gh-pages
 ```
 
-### 3. Turn on Pages
+`npm run deploy` (in `scripts/deploy.sh`) builds the site and force-pushes the output to `gh-pages`. GitHub Pages then updates the live site in about a minute. You need a GitHub login on this machine (`gh auth login`).
 
-On GitHub, open **Settings → Pages → Build and deployment → Source** and choose **GitHub Actions**.
+**Pages settings:** Settings → Pages → Source: **Deploy from a branch**, branch **`gh-pages`**, folder **`/ (root)`**.
 
-The first run starts when you push. You can watch it in the **Actions** tab, or re-run it from there with *Run workflow*. When it finishes, the site is live at the URL in the table above.
+### Automatic deploys (GitHub Actions)
+
+`.github/workflows/deploy.yml` can build and deploy on every push to `main`, but GitHub Actions is currently blocked on this account ("account locked due to a billing issue"), so the workflow is set to manual-only. Once Actions works again:
+
+1. In `.github/workflows/deploy.yml`, uncomment the `push:` trigger.
+2. Settings → Pages → Source → **GitHub Actions**.
+3. Push to `main`. From then on, every push deploys automatically and you won't need `npm run deploy`.
+
+The workflow sets Vite's base path automatically: `/` for a `<user>.github.io` repo, `/<repo>/` for any other repo name. You can override it with a repository variable named `BASE_PATH`.
 
 ### Custom domain (optional)
 
-1. Add the domain under **Settings → Pages → Custom domain**.
-2. Under **Settings → Secrets and variables → Actions → Variables**, add a repository variable `BASE_PATH` with the value `/`.
-3. Push again, or re-run the workflow.
+Add the domain under **Settings → Pages → Custom domain**. The base path is already `/`, so nothing else changes.
 
 ### Troubleshooting
 
-- **Blank page or 404 for JS/CSS files**: the base path doesn't match the URL. Check the "Resolve base path" step in the Actions log. Set the `BASE_PATH` variable if you use a custom domain.
-- **Workflow fails at "deploy"**: make sure Pages → Source is set to **GitHub Actions**.
-- Commit `package-lock.json` so CI installs exactly the versions you tested with.
+- **Blank page or 404s for JS/CSS:** the base path doesn't match the URL. The site must be built with `BASE_PATH=/<repo>/` when it isn't served from a `<user>.github.io` repo.
+- **`npm run deploy` asks for a password:** run `gh auth login` first.
+- **Live site not updating:** check the "pages build and deployment" run in the repo's **Actions** tab, and hard-refresh the browser (Ctrl+Shift+R).
 
 ---
 
 ## Project structure
 
 ```
-├── .github/workflows/deploy.yml   # CI: build + deploy to GitHub Pages
+├── .github/workflows/deploy.yml   # CI deploy (manual-only for now; see Deploying)
+├── scripts/deploy.sh              # npm run deploy → publish to gh-pages
 ├── public/                        # static files (favicon, photo, résumé, screenshots)
 ├── index.html                     # SEO meta, fonts, theme bootstrap, JSON-LD
 ├── src/

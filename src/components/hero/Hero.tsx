@@ -51,8 +51,8 @@ export function Hero() {
           <motion.p variants={item} className="mt-6 flex flex-wrap gap-y-1 font-mono text-[13px] text-muted">
             {profile.roles.map((role, i) => (
               <span key={role} className="whitespace-nowrap">
-                {i > 0 && <span className="mx-2 text-accent">·</span>}
                 {role}
+                {i < profile.roles.length - 1 && <span className="mx-2 text-accent">·</span>}
               </span>
             ))}
           </motion.p>
