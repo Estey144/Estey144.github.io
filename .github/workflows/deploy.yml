@@ -1,0 +1,76 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+
+      # Works out the URL path the site will live under, so assets load correctly:
+      #   <user>.github.io repo  -> "/"
+      #   any other repo         -> "/<repo-name>/"
+      # Override by adding a repository variable BASE_PATH (Settings → Secrets and variables → Actions → Variables),
+      # e.g. "/" when using a custom domain.
+      - name: Resolve base path
+        id: base
+        env:
+          OVERRIDE: ${{ vars.BASE_PATH }}
+          REPO: ${{ github.event.repository.name }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          repo_lc=$(echo "$REPO" | tr '[:upper:]' '[:lower:]')
+          owner_lc=$(echo "$OWNER" | tr '[:upper:]' '[:lower:]')
+          if [ -n "$OVERRIDE" ]; then
+            base="$OVERRIDE"
+          elif [ "$repo_lc" = "$owner_lc.github.io" ]; then
+            base="/"
+          else
+            base="/$REPO/"
+          fi
+          echo "Using base path: $base"
+          echo "path=$base" >> "$GITHUB_OUTPUT"
+
+      - name: Build
+        run: npm run build
+        env:
+          BASE_PATH: ${{ steps.base.outputs.path }}
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
